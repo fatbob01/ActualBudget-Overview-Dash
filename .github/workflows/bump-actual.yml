@@ -1,0 +1,44 @@
+name: Bump Actual API
+
+# Fork only: the image must bundle the same @actual-app/api version as actual-server. Every 3 hours,
+# bump to the latest stable release, tag it and build the image, so Watchtower picks it up.
+on:
+  schedule:
+    - cron: "17 */3 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  actions: write
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - id: version
+        run: |
+          current=$(node -p "require('./package.json').dependencies['@actual-app/api']")
+          latest=$(npm view @actual-app/api dist-tags.latest)
+          echo "current=$current latest=$latest"
+          echo "latest=$latest" >> "$GITHUB_OUTPUT"
+          if [ "$current" != "$latest" ]; then echo "bump=true" >> "$GITHUB_OUTPUT"; fi
+      - if: steps.version.outputs.bump == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.latest }}
+        run: |
+          npm install "@actual-app/api@$VERSION" --save-exact --package-lock-only --ignore-scripts --no-audit --no-fund
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -am "chore: bump @actual-app/api to $VERSION"
+          tag="v$VERSION-fatbob01.1"
+          git tag "$tag"
+          git push origin main "$tag"
+          # Pushes made with GITHUB_TOKEN don't trigger other workflows, so start the image build explicitly.
+          gh workflow run docker.yml --ref "$tag"
