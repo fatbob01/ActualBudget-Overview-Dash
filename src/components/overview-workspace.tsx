@@ -31,6 +31,7 @@ const INC = '#34d399';
 const EXP = '#fb7185';
 const NET = '#60a5fa';
 const ASIDE = '#a78bfa'; // money set aside (excluded categories)
+const WITHDRAWN = '#fbbf24'; // money taken back out of savings
 const PAGE = 200;
 
 const signed = (v: number, f: (n: number) => string) => (v >= 0 ? '+' : '') + f(v);
@@ -366,7 +367,7 @@ export function OverviewWorkspace({ data, onRefresh, refreshing, onEdit }: Props
                                     <span className="text-[11.5px] text-[#75829a]">Click a row to filter · again to clear</span>
                                     {aside && (
                                         <span className={`ml-auto ${num} text-[11.5px] text-[#9aa6b6]`} title="Excluded categories (settings), net of withdrawals">
-                                            Set aside · YTD <span className="font-semibold" style={{ color: ASIDE }}>{signed(ytdAside, eur0)}</span>
+                                            Set aside · YTD <span className="font-semibold" style={{ color: ytdAside < 0 ? WITHDRAWN : ASIDE }}>{signed(ytdAside, eur0)}</span>
                                         </span>
                                     )}
                                 </div>
@@ -390,7 +391,7 @@ export function OverviewWorkspace({ data, onRefresh, refreshing, onEdit }: Props
                                             <BarCell value={m.income} scale={monthScale.cap} color={INC} textColor="#9ce5c6" dim={dim} fmt={F} />
                                             <BarCell value={m.expense} scale={monthScale.cap} color={EXP} textColor="#fcb3be" dim={dim} fmt={F} />
                                             <span className={`${num} text-right text-xs font-semibold`} style={{ color: n >= 0 ? NET : EXP }}>{signed(n, eur0)}</span>
-                                            {aside && <span className={`${num} text-right text-xs`} style={{ color: Math.abs(m.aside) < 0.5 ? '#66738a' : ASIDE }}>{Math.abs(m.aside) < 0.5 ? '—' : signed(m.aside, eur0)}</span>}
+                                            {aside && <span className={`${num} text-right text-xs`} style={{ color: Math.abs(m.aside) < 0.5 ? '#66738a' : m.aside < 0 ? WITHDRAWN : ASIDE }}>{Math.abs(m.aside) < 0.5 ? '—' : signed(m.aside, eur0)}</span>}
                                             <span className={`${num} text-right text-[11.5px] text-[#9aa6b6]`}>{r !== null && r > -100 ? `${r.toFixed(0)}%` : '—'}</span>
                                         </button>
                                     );
